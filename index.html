@@ -299,8 +299,7 @@ button.home-card:hover{ border-color:rgba(0,240,255,.4); background:var(--tier2)
 .hs-card .s{ font-family:var(--mono); font-size:10px; letter-spacing:.04em; color:#B7BDC2; }
 .hotspot.is-active .hs-card{ background:rgba(0,240,255,.16); border-color:var(--cyan); }
 .hotspot.flip{ flex-direction:row-reverse; }
-.hotspot.flip .hs-card{ border-left:1px solid rgba(0,240,255,.28); border-
-    right:2px solid var(--cyan); text-align:right; }
+.hotspot.flip .hs-card{ border-left:1px solid rgba(0,240,255,.28); border-right:2px solid var(--cyan); text-align:right; }
 .hotspot.hidden{ opacity:0; pointer-events:none; }
 
 /* ---------- Inspector ---------- */
@@ -398,3 +397,1491 @@ button.home-card:hover{ border-color:rgba(0,240,255,.4); background:var(--tier2)
 .heat-scale i{ flex:1; }
 
 /* ============================================================
+   ASK AI
+   ============================================================ */
+.ai-wrap{ max-width:940px; margin:0 auto; padding:30px 24px 40px; display:flex; flex-direction:column; height:100%; }
+.ai-log{
+  flex:1; min-height:220px; overflow-y:auto; border:1px solid var(--hair); background:var(--tier1);
+  padding:18px; display:flex; flex-direction:column; gap:14px; border-radius:2px;
+}
+.msg{ display:flex; gap:12px; align-items:flex-start; max-width:78ch; }
+.msg .who{ font-family:var(--mono); font-size:9px; letter-spacing:.14em; color:#6C7076; padding-top:3px; width:52px; flex:0 0 auto; text-transform:uppercase; }
+.msg .txt{ font-size:13px; line-height:20px; color:#D6D9DC; }
+.msg.sys .txt{ color:#9BA1A7; }
+.msg.user .who{ color:var(--cyan); }
+.msg.user .txt{ color:#fff; }
+.msg .txt b{ color:var(--cyan); font-weight:600; font-family:var(--mono); font-size:12px; }
+.msg .txt code{ font-family:var(--mono); font-size:11.5px; color:var(--cyan); }
+.ai-suggest{ display:flex; flex-wrap:wrap; gap:6px; margin:12px 0; }
+.ai-suggest button{
+  font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase;
+  border:1px solid var(--hair); padding:6px 10px; color:#B7BDC2; border-radius:2px; transition:.18s;
+}
+.ai-suggest button:hover{ border-color:var(--cyan); color:var(--cyan); background:rgba(0,240,255,.05); }
+.ai-form{ display:flex; gap:8px; }
+.ai-form input{
+  flex:1; background:var(--tier1); border:1px solid var(--hair-strong); color:#fff;
+  font-family:var(--mono); font-size:12px; padding:13px 14px; border-radius:2px; outline:none;
+  transition:border-color .2s, box-shadow .2s;
+}
+.ai-form input::placeholder{ color:#5C6167; }
+.ai-form input:focus{ border-color:var(--cyan); box-shadow:inset 0 0 12px rgba(0,240,255,.1); }
+.caret{ display:inline-block; width:7px; height:13px; background:var(--cyan); vertical-align:-2px; animation:blink 1s steps(2) infinite; }
+@keyframes blink{ 0%,49%{opacity:1} 50%,100%{opacity:0} }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 1100px){
+  .inspector{ width:300px; }
+  .rendercam{ min-width:200px; }
+}
+@media (max-width: 860px){
+  .nav{ display:none; }
+  .nav.mobile{ display:flex; }
+  .gizmo{ display:none; }
+  .rendercam{ top:10px; right:10px; padding:7px 10px; min-width:0; }
+  .rendercam .big{ font-size:15px; }
+  .rendercam .row:nth-child(3){ display:none; }
+  .rail{ left:10px; top:10px; flex-direction:row; }
+  .tool-wrap:hover .tool-tip{ opacity:0; }
+  .inspector{
+    top:auto; right:0; left:0; bottom:0; width:100%; max-height:58%;
+    border-left:none; border-right:none; border-bottom:none;
+  }
+  .inspector.collapsed{ transform:translateY(calc(100% + 24px)); }
+  .dock{ bottom:10px; width:98vw; }
+  .chip{ min-width:0; padding:6px 9px; }
+  .chip .s{ display:none; }
+  .hs-card .s{ display:none; }
+  .hs-line{ width:16px; }
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation-duration:.001ms !important; transition-duration:.06s !important; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ============================ TOP BAR ============================ -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-name">APEX<span>/</span>LABS</div>
+    </div>
+
+    <nav class="nav" id="nav" aria-label="Primary">
+      <button type="button" class="nav-btn" data-view="home" aria-selected="true">Home</button>
+      <button type="button" class="nav-btn" data-view="explorer" aria-selected="false">3D Explorer</button>
+      <button type="button" class="nav-btn" data-view="parts" aria-selected="false">Part Details</button>
+      <button type="button" class="nav-btn" data-view="ai" aria-selected="false">Ask AI</button>
+    </nav>
+
+    <div class="topbar-right">
+      <div class="lbl" style="display:flex;align-items:center;gap:8px;">
+        <span class="pulse" aria-hidden="true"></span>
+        <span>Unit</span><span class="lbl-c">APX-01 KINETIC</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ======================= TELEMETRY STRIP ======================= -->
+  <div class="telemetry" id="telemetry" role="status" aria-live="off">
+    <div class="tcell"><span class="k">FPS</span><span class="v" id="t-fps">60.0</span></div>
+    <div class="tcell"><span class="k">Pitch</span><span class="v" id="t-pitch">14.0°</span></div>
+    <div class="tcell"><span class="k">Yaw</span><span class="v" id="t-yaw">42.0°</span></div>
+    <div class="tcell"><span class="k">Dist</span><span class="v neutral" id="t-dist">6.40 m</span></div>
+    <div class="tcell"><span class="k">CAD</span><span class="v" id="t-cad">SYNCED / v4.8</span></div>
+    <div class="tcell"><span class="k">Grid</span><span class="v neutral" id="t-grid">10 mm · 1:1</span></div>
+    <div class="tcell"><span class="k">Shading</span><span class="v neutral" id="t-shading">STANDARD</span></div>
+    <div class="tcell push"><span class="k">Node</span><span class="v neutral">SYNAPSE-09</span></div>
+    <div class="tcell"><span class="k">Focus</span><span class="v" id="t-focus">NONE</span></div>
+  </div>
+
+  <main>
+
+    <!-- ============================ VIEW: HOME ============================ -->
+    <section class="view active" id="view-home" aria-label="Home">
+      <div class="scroll">
+        <div class="home-wrap">
+          <div class="home-glow" aria-hidden="true"></div>
+
+          <div class="eyebrow">
+            <span class="pulse" aria-hidden="true"></span>
+            Next-gen powertrain architecture · CAD protocol ISO-9002
+          </div>
+
+          <h1 class="hero-title">E-Moto<br />Architecture <em>Lab</em></h1>
+          <p class="hero-sub">
+            A live teardown of the APX-01 Kinetic. Spin the assembly, pull any component out of the
+            stack, and read its real operating telemetry — battery, drive unit, inverter and chassis,
+            all in one WebGL space.
+          </p>
+
+          <div class="hero-actions">
+            <button type="button" class="btn-primary" data-goto="explorer">
+              Open the 3D explorer
+              <span class="mono" aria-hidden="true">[ ▸ ]</span>
+            </button>
+            <button type="button" class="btn-ghost" data-goto="parts">Read component specs</button>
+          </div>
+
+          <div class="spec-strip">
+            <div class="spec-cell"><div class="n">180<u>kW</u></div><div class="k">Peak drive output</div></div>
+            <div class="spec-cell"><div class="n">800<u>V</u></div><div class="k">Pack architecture</div></div>
+            <div class="spec-cell"><div class="n">24<u>kWh</u></div><div class="k">Usable energy</div></div>
+            <div class="spec-cell"><div class="n">186<u>kg</u></div><div class="k">Dry mass</div></div>
+            <div class="spec-cell"><div class="n">2.9<u>s</u></div><div class="k">0–100 km/h</div></div>
+          </div>
+
+          <div class="section-head"><h2>Where to start</h2><span class="rule"></span></div>
+
+          <div class="home-grid">
+            <button type="button" class="home-card" data-goto="explorer">
+              <span class="card-index">Live viewport</span>
+              <h3>Spin the assembly</h3>
+              <p>Drag to orbit, scroll to zoom, and tap any marker on the machine to fly the camera into that component.</p>
+            </button>
+            <button type="button" class="home-card" data-focus="battery">
+              <span class="card-index">Energy</span>
+              <h3>Inspect the pack</h3>
+              <p>96s4p prismatic cells on an 800-volt bus, liquid-plate cooled and load-bearing inside the monocoque.</p>
+            </button>
+            <button type="button" class="home-card" data-focus="motor">
+              <span class="card-index">Drive</span>
+              <h3>Inspect the motor</h3>
+              <p>Axial-flux permanent magnet unit: 180 kW peak, 320 Nm at the countershaft, oil-misted stator.</p>
+            </button>
+            <button type="button" class="home-card" data-goto="ai">
+              <span class="card-index">Console</span>
+              <h3>Query the spec sheet</h3>
+              <p>Ask the on-board assistant about any part and get the engineering numbers back without leaving the lab.</p>
+            </button>
+          </div>
+
+          <div class="section-head"><h2>Build sheet</h2><span class="rule"></span></div>
+          <div class="rows" style="max-width:640px;">
+            <div class="row"><span class="k">Chassis</span><span class="dots"></span><span class="v">Carbon monocoque, 8.4 kg</span></div>
+            <div class="row"><span class="k">Drive unit</span><span class="dots"></span><span class="v">Axial flux PMSM, mid-mount</span></div>
+            <div class="row"><span class="k">Inverter</span><span class="dots"></span><span class="v">Silicon-carbide, 800 V / 550 A</span></div>
+            <div class="row"><span class="k">Charging</span><span class="dots"></span><span class="v">DC 350 kW · 10–80% in 11 min</span></div>
+            <div class="row"><span class="k">Suspension</span><span class="dots"></span><span class="v">Öhlins semi-active, 43 mm</span></div>
+            <div class="row"><span class="k">Homologation</span><span class="dots"></span><span class="v">Stage 4 · Apex Dynamics</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: 3D EXPLORER ========================= -->
+    <section class="view" id="view-explorer" aria-label="3D explorer">
+      <div id="stage">
+        <div id="gl-host"></div>
+        <div class="scanline" aria-hidden="true"></div>
+        <div class="vignette" aria-hidden="true"></div>
+        <div class="bracket tl" aria-hidden="true"></div>
+        <div class="bracket tr" aria-hidden="true"></div>
+        <div class="bracket bl" aria-hidden="true"></div>
+        <div class="bracket br" aria-hidden="true"></div>
+        <div class="crosshair" aria-hidden="true"></div>
+
+        <!-- Hotspot layer -->
+        <div id="hotspots"></div>
+
+        <!-- Left tool rail -->
+        <div class="rail">
+          <div class="tool-wrap">
+            <button type="button" class="tool" id="btn-rotate" aria-pressed="true" aria-label="Auto-rotate">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/></svg>
+            </button>
+            <span class="tool-tip">Auto-rotate</span>
+          </div>
+          <div class="tool-wrap">
+            <button type="button" class="tool" id="btn-explode" aria-pressed="false" aria-label="Exploded view">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><rect x="9" y="9" width="6" height="6"/></svg>
+            </button>
+            <span class="tool-tip">Exploded view</span>
+          </div>
+          <div class="tool-wrap">
+            <button type="button" class="tool" id="btn-grid" aria-pressed="true" aria-label="Reference grid">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+            </button>
+            <span class="tool-tip">Reference grid</span>
+          </div>
+          <div class="tool-wrap">
+            <button type="button" class="tool" id="btn-reset" aria-label="Reset camera">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 5v14M5 12h14"/><circle cx="12" cy="12" r="9"/></svg>
+            </button>
+            <span class="tool-tip">Reset camera</span>
+          </div>
+          <div class="tool-wrap">
+            <button type="button" class="tool" id="btn-inspector" aria-pressed="true" aria-label="Toggle inspector">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="16"/><path d="M15 4v16"/></svg>
+            </button>
+            <span class="tool-tip">Inspector panel</span>
+          </div>
+        </div>
+
+        <!-- Gizmo / world reference -->
+        <div class="gizmo">
+          <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
+            <line x1="18" y1="18" x2="18" y2="5" stroke="#00F0FF" stroke-width="1.2"/>
+            <line x1="18" y1="18" x2="31" y2="24" stroke="#A1A1AA" stroke-width="1.2"/>
+            <line x1="18" y1="18" x2="5" y2="24" stroke="#A1A1AA" stroke-width="1.2"/>
+            <text x="16" y="4" fill="#00F0FF" font-size="6" font-family="monospace">Y</text>
+            <text x="31" y="28" fill="#A1A1AA" font-size="6" font-family="monospace">X</text>
+            <text x="2" y="28" fill="#A1A1AA" font-size="6" font-family="monospace">Z</text>
+          </svg>
+          <div class="axis">
+            <span>WORLD REF</span>
+            <span>X <b id="g-x">0.0</b> &nbsp; Y <b id="g-y">0.0</b> &nbsp; Z <b id="g-z">0.0</b></span>
+          </div>
+        </div>
+
+        <!-- Render cam readout -->
+        <div class="rendercam">
+          <div class="big">PITCH <b id="c-pitch">14°</b> // YAW <b id="c-yaw">42°</b></div>
+          <div class="row">FPS <span style="color:#00F0FF" id="c-fps">60.0</span> · STABLE &nbsp; SHADING <span id="c-shade" style="color:#fff">STANDARD</span></div>
+          <div class="row">RAYTRACED DENOISER <span style="color:#00F0FF">[ACTIVE]</span></div>
+        </div>
+
+        <!-- Inspector panel -->
+        <aside class="inspector collapsed" id="inspector" aria-label="Component inspector">
+          <div class="insp-head">
+            <div>
+              <div class="idx" id="ins-idx">[00]</div>
+              <h2 id="ins-title">No selection</h2>
+              <p id="ins-sub">Select a component node</p>
+            </div>
+            <button type="button" class="insp-close" id="ins-close" aria-label="Close inspector">✕</button>
+          </div>
+          <div class="insp-body">
+            <p class="insp-desc" id="ins-desc"></p>
+            <div class="gauges" id="ins-gauges"></div>
+            <div class="rows" id="ins-rows"></div>
+            <div class="tagline" id="ins-tags"></div>
+          </div>
+        </aside>
+
+        <!-- Bottom dock -->
+        <div class="dock">
+          <div class="dock-row" id="part-dock"></div>
+          <div class="seg" id="mode-seg" role="group" aria-label="Render mode">
+            <button type="button" data-mode="standard" aria-pressed="true">Standard</button>
+            <button type="button" data-mode="wireframe" aria-pressed="false">Wireframe</button>
+            <button type="button" data-mode="thermal" aria-pressed="false">Thermal</button>
+          </div>
+        </div>
+
+        <!-- Loader -->
+        <div class="loader" id="loader">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div class="t" id="loader-text">Compiling geometry buffers</div>
+          <div class="bar"><i id="loader-bar"></i></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================= VIEW: PART DETAILS ========================= -->
+    <section class="view" id="view-parts" aria-label="Part details">
+      <div class="scroll">
+        <div class="parts-wrap">
+          <div class="eyebrow"><span class="pulse" aria-hidden="true"></span>Component register · APX-01 Kinetic</div>
+          <h1 class="hero-title" style="font-size:clamp(28px,4.4vw,44px); margin-top:16px;">Part details</h1>
+          <p class="hero-sub">Four load-path-critical assemblies. Open any of them in the viewport to see where it sits in the stack.</p>
+          <div class="part-grid" id="part-grid" style="margin-top:28px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================ VIEW: ASK AI ============================ -->
+    <section class="view" id="view-ai" aria-label="Ask AI">
+      <div class="scroll">
+        <div class="ai-wrap">
+          <div class="eyebrow"><span class="pulse" aria-hidden="true"></span>Spec console · offline build sheet index</div>
+          <h1 class="hero-title" style="font-size:clamp(28px,4.4vw,44px); margin-top:16px;">Ask the lab</h1>
+          <p class="hero-sub" style="margin-bottom:18px;">Type a question about the machine. The console reads the same build sheet the viewport does, so every number here matches the model.</p>
+
+          <div class="ai-log" id="ai-log"></div>
+
+          <div class="ai-suggest" id="ai-suggest">
+            <button type="button">How big is the battery?</button>
+            <button type="button">What motor does it use?</button>
+            <button type="button">Why silicon carbide?</button>
+            <button type="button">How stiff is the frame?</button>
+            <button type="button">How fast does it charge?</button>
+            <button type="button">What is the range?</button>
+          </div>
+
+          <form class="ai-form" id="ai-form" autocomplete="off">
+            <input id="ai-input" type="text" placeholder="ask about the pack, motor, inverter, chassis…" aria-label="Ask a question" />
+            <button type="submit" class="btn-primary" style="padding:13px 18px;">Send</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ===================== THREE.JS (UMD) + ORBITCONTROLS ===================== -->
+<script src="https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.136.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+/* ==========================================================================
+   APEX LABS — E-MOTO ARCHITECTURE HUD
+   Single-file application script.
+   NOTE: every interactive element is a <button> driven by JS listeners.
+   There is not a single <a href> in this document — no navigation events,
+   no "open external link" prompts inside sandboxed frames.
+   ========================================================================== */
+(function () {
+  'use strict';
+
+  /* ----------------------------------------------------------------------
+     1. COMPONENT DATA MODEL
+     ---------------------------------------------------------------------- */
+  const PARTS = {
+    battery: {
+      index: '[01]',
+      name: 'Battery pack',
+      sub: '800 V / 24 kWh ultra-pack',
+      short: '800V / 24kWh',
+      heat: 0.42,
+      accent: 0x00f0ff,
+      desc: 'A 96s4p prismatic stack on an 800-volt bus. The case is structural — it ties the headstock to the swingarm pivot, so the pack carries chassis load instead of hanging off it.',
+      gauges: [
+        { k: 'State of charge', v: '82', u: '%', pct: 82 },
+        { k: 'Pack temp', v: '34', u: '°C', pct: 38 },
+        { k: 'Bus voltage', v: '798', u: 'V', pct: 92 },
+        { k: 'Draw', v: '146', u: 'kW', pct: 68 }
+      ],
+      rows: [
+        ['Cell format', 'Prismatic NMC 811'],
+        ['Configuration', '96s4p · 384 cells'],
+        ['Usable energy', '24.0 kWh'],
+        ['Gravimetric density', '248 Wh/kg'],
+        ['Cooling', 'Liquid cold-plate, dual circuit'],
+        ['Mass', '97 kg incl. case'],
+        ['DC charge peak', '350 kW'],
+        ['Cycle life', '1,800 cycles to 80%']
+      ],
+      tags: ['Structural', 'Liquid cooled', 'IP68', 'Serviceable modules']
+    },
+    motor: {
+      index: '[02]',
+      name: 'Electric motor',
+      sub: 'Axial flux permanent magnet · 180 kW',
+      short: 'Axial flux / 180kW',
+      heat: 0.88,
+      accent: 0x00f0ff,
+      desc: 'A mid-mounted axial-flux PMSM, 21 kg dry. Pancake geometry keeps the mass low and central, and the short flux path gives it torque from zero without a reduction stage doing the work.',
+      gauges: [
+        { k: 'Output', v: '180', u: 'kW', pct: 88 },
+        { k: 'Torque', v: '320', u: 'Nm', pct: 76 },
+        { k: 'Rotor temp', v: '112', u: '°C', pct: 74, warn: true },
+        { k: 'Shaft speed', v: '9,400', u: 'rpm', pct: 63 }
+      ],
+      rows: [
+        ['Topology', 'Dual-rotor axial flux'],
+        ['Peak power', '180 kW @ 9,400 rpm'],
+        ['Continuous power', '104 kW'],
+        ['Peak torque', '320 Nm from 0 rpm'],
+        ['Efficiency', '96.4% peak'],
+        ['Cooling', 'Oil mist, stator-direct'],
+        ['Mass', '21.4 kg'],
+        ['Final drive', 'Carbon-reinforced belt, 3.1:1']
+      ],
+      tags: ['Mid-mount', 'Oil cooled', 'Regen capable', 'Thermal watch']
+    },
+    controller: {
+      index: '[03]',
+      name: 'Motor controller',
+      sub: '800 V silicon-carbide inverter',
+      short: '800V SiC inverter',
+      heat: 0.66,
+      accent: 0x00f0ff,
+      desc: 'Silicon-carbide switching at 24 kHz. SiC holds its efficiency at 800 volts where silicon IGBTs start dumping energy as heat, which is what lets the pack and motor run the same bus with no step-down.',
+      gauges: [
+        { k: 'Switching', v: '24', u: 'kHz', pct: 70 },
+        { k: 'Junction temp', v: '78', u: '°C', pct: 55 },
+        { k: 'Phase current', v: '512', u: 'A', pct: 84 },
+        { k: 'Efficiency', v: '99.1', u: '%', pct: 99 }
+      ],
+      rows: [
+        ['Device', 'SiC MOSFET, 1200 V class'],
+        ['Bus voltage', '800 V nominal'],
+        ['Peak phase current', '550 A'],
+        ['Control loop', 'FOC @ 20 kHz'],
+        ['Cooling', 'Shared pack coolant loop'],
+        ['Mass', '4.8 kg'],
+        ['Safety', 'ASIL-D torque monitor'],
+        ['Firmware', 'APX-INV 4.8.2']
+      ],
+      tags: ['SiC', 'ASIL-D', 'Liquid cooled', 'OTA updatable']
+    },
+    frame: {
+      index: '[04]',
+      name: 'Chassis frame',
+      sub: 'Carbon monocoque · 8.4 kg',
+      short: 'Carbon monocoque',
+      heat: 0.18,
+      accent: 0x00f0ff,
+      desc: 'A single-piece autoclaved monocoque with titanium inserts at the headstock and pivot. Torsional stiffness is tuned, not maximised — the lay-up leaves controlled lateral flex so the bike still reads the road at full lean.',
+      gauges: [
+        { k: 'Torsional stiff.', v: '14.8', u: 'kNm/°', pct: 82 },
+        { k: 'Mass', v: '8.4', u: 'kg', pct: 22 },
+        { k: 'Wheelbase', v: '1,465', u: 'mm', pct: 60 },
+        { k: 'Rake', v: '23.5', u: '°', pct: 47 }
+      ],
+      rows: [
+        ['Construction', 'Autoclaved prepreg monocoque'],
+        ['Lay-up', 'T800 / T1100 hybrid, 14 ply'],
+        ['Inserts', 'Ti-6Al-4V, bonded + pinned'],
+        ['Torsional stiffness', '14.8 kNm/deg'],
+        ['Wheelbase', '1,465 mm'],
+        ['Rake / trail', '23.5° / 97 mm'],
+        ['Dry mass', '8.4 kg'],
+        ['Load path', 'Pack-stressed, no lower cradle']
+      ],
+      tags: ['Monocoque', 'Ti inserts', 'Pack-stressed', 'Homologated']
+    }
+  };
+
+  const PART_IDS = ['battery', 'motor', 'controller', 'frame'];
+
+  /* ----------------------------------------------------------------------
+     2. VIEW ROUTER  (button-driven, zero navigation)
+     ---------------------------------------------------------------------- */
+  const views = {
+    home: document.getElementById('view-home'),
+    explorer: document.getElementById('view-explorer'),
+    parts: document.getElementById('view-parts'),
+    ai: document.getElementById('view-ai')
+  };
+  let currentView = 'home';
+
+  function setView(name, ev) {
+    if (ev && typeof ev.preventDefault === 'function') ev.preventDefault();
+    if (!views[name]) return;
+    currentView = name;
+    Object.keys(views).forEach(function (k) {
+      views[k].classList.toggle('active', k === name);
+    });
+    document.querySelectorAll('.nav-btn').forEach(function (b) {
+      b.setAttribute('aria-selected', String(b.dataset.view === name));
+    });
+    if (name === 'explorer') {
+      // the canvas was hidden: force a resize pass so the buffer matches
+      requestAnimationFrame(onResize);
+    }
+  }
+
+  document.getElementById('nav').addEventListener('click', function (e) {
+    const btn = e.target.closest('.nav-btn');
+    if (!btn) return;
+    setView(btn.dataset.view, e);
+  });
+
+  // Any button carrying data-goto switches views.
+  document.addEventListener('click', function (e) {
+    const g = e.target.closest('[data-goto]');
+    if (g) { setView(g.dataset.goto, e); return; }
+  });
+
+  /* ----------------------------------------------------------------------
+     3. THREE.JS SCENE
+     ---------------------------------------------------------------------- */
+  const host = document.getElementById('gl-host');
+  const hotspotLayer = document.getElementById('hotspots');
+
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a0c);
+  scene.fog = new THREE.Fog(0x0a0a0c, 9, 26);
+
+  const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 200);
+  camera.position.set(4.6, 2.6, 5.2);
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  host.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.055;
+  controls.rotateSpeed = 0.72;
+  controls.zoomSpeed = 0.8;
+  controls.panSpeed = 0.6;
+  controls.minDistance = 2.2;
+  controls.maxDistance = 14;
+  controls.maxPolarAngle = Math.PI * 0.52;
+  controls.target.set(0, 1.1, 0);
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 0.0; // ramped in softly below
+
+  /* ---------- Lighting rig ---------- */
+  scene.add(new THREE.HemisphereLight(0x9fd8ff, 0x05070a, 0.42));
+
+  const key = new THREE.DirectionalLight(0xffffff, 1.35);
+  key.position.set(5.5, 7.5, 4.5);
+  key.castShadow = true;
+  key.shadow.mapSize.set(2048, 2048);
+  key.shadow.camera.near = 1;
+  key.shadow.camera.far = 30;
+  key.shadow.camera.left = -6; key.shadow.camera.right = 6;
+  key.shadow.camera.top = 6; key.shadow.camera.bottom = -6;
+  key.shadow.bias = -0.0008;
+  scene.add(key);
+
+  const rimA = new THREE.DirectionalLight(0x00f0ff, 1.15);
+  rimA.position.set(-6, 3.4, -4.5);
+  scene.add(rimA);
+
+  const rimB = new THREE.DirectionalLight(0x2563eb, 0.65);
+  rimB.position.set(3.5, 1.2, -6);
+  scene.add(rimB);
+
+  const under = new THREE.PointLight(0x00f0ff, 0.55, 8, 2);
+  under.position.set(0, 0.25, 0);
+  scene.add(under);
+
+  /* ---------- Ground plane + reference grid ---------- */
+  const ground = new THREE.Mesh(
+    new THREE.CircleGeometry(9, 64),
+    new THREE.MeshStandardMaterial({ color: 0x08090c, roughness: 0.62, metalness: 0.35 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.002;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const grid = new THREE.GridHelper(20, 80, 0x00f0ff, 0x1c2a30);
+  grid.material.transparent = true;
+  grid.material.opacity = 0.22;
+  scene.add(grid);
+
+  // Orbit reticle rings on the floor
+  const reticle = new THREE.Group();
+  [1.9, 2.6, 3.4].forEach(function (r, i) {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(r, r + 0.006, 96),
+      new THREE.MeshBasicMaterial({ color: 0x00f0ff, transparent: true, opacity: 0.16 - i * 0.04, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.004;
+    reticle.add(ring);
+  });
+  scene.add(reticle);
+
+  /* ----------------------------------------------------------------------
+     4. GEOMETRY BUILDERS
+     ---------------------------------------------------------------------- */
+  const bike = new THREE.Group();
+  scene.add(bike);
+
+  const MAT = {
+    carbon:   { color: 0x16181d, metalness: 0.55, roughness: 0.42 },
+    carbonHi: { color: 0x22262d, metalness: 0.6,  roughness: 0.34 },
+    alloy:    { color: 0x6d747d, metalness: 0.96, roughness: 0.24 },
+    darkAlloy:{ color: 0x33383f, metalness: 0.92, roughness: 0.3 },
+    rubber:   { color: 0x0c0d10, metalness: 0.05, roughness: 0.92 },
+    packCase: { color: 0x13303a, metalness: 0.68, roughness: 0.36 },
+    inverter: { color: 0x1c2026, metalness: 0.8,  roughness: 0.28 },
+    accent:   { color: 0x00f0ff, metalness: 0.3,  roughness: 0.2, emissive: 0x00c8d8, emissiveIntensity: 0.9 }
+  };
+
+  function mkMat(spec) {
+    const baseEmissive = spec.emissive !== undefined ? spec.emissive : 0x000000;
+    const baseIntensity = spec.emissiveIntensity !== undefined ? spec.emissiveIntensity : 0;
+    const m = new THREE.MeshStandardMaterial({
+      color: spec.color,
+      metalness: spec.metalness,
+      roughness: spec.roughness,
+      emissive: baseEmissive,
+      emissiveIntensity: baseIntensity
+    });
+    m.userData.baseEmissive = baseEmissive;
+    m.userData.baseIntensity = baseIntensity;
+    return m;
+  }
+
+  // Registry of every renderable mesh, with its material variants.
+  const registry = [];
+
+  function register(mesh, spec, heat) {
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+
+    const standard = mkMat(spec);
+    const wire = new THREE.MeshBasicMaterial({
+      color: 0x8be9f2, wireframe: true, transparent: true, opacity: 0.55
+    });
+    const thermal = new THREE.MeshStandardMaterial({
+      color: heatColor(heat), metalness: 0.1, roughness: 0.65,
+      emissive: heatColor(heat), emissiveIntensity: 0.45
+    });
+
+    mesh.material = standard;
+    mesh.userData.mats = { standard: standard, wireframe: wire, thermal: thermal };
+    mesh.userData.heat = heat;
+    registry.push(mesh);
+    return mesh;
+  }
+
+  // blue -> cyan -> amber -> red heat ramp
+  function heatColor(t) {
+    t = Math.max(0, Math.min(1, t));
+    const stops = [
+      { t: 0.00, c: [0x14, 0x3a, 0xc8] },
+      { t: 0.33, c: [0x00, 0xd8, 0xe8] },
+      { t: 0.66, c: [0xff, 0xb8, 0x00] },
+      { t: 1.00, c: [0xff, 0x2a, 0x2a] }
+    ];
+    let a = stops[0], b = stops[stops.length - 1];
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (t >= stops[i].t && t <= stops[i + 1].t) { a = stops[i]; b = stops[i + 1]; break; }
+    }
+    const f = (t - a.t) / Math.max(0.0001, (b.t - a.t));
+    const r = Math.round(a.c[0] + (b.c[0] - a.c[0]) * f);
+    const g = Math.round(a.c[1] + (b.c[1] - a.c[1]) * f);
+    const bl = Math.round(a.c[2] + (b.c[2] - a.c[2]) * f);
+    return (r << 16) | (g << 8) | bl;
+  }
+
+  function box(w, h, d, spec, heat, pos, rot) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), null);
+    register(m, spec, heat);
+    if (pos) m.position.set(pos[0], pos[1], pos[2]);
+    if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+    return m;
+  }
+
+  function cyl(rt, rb, h, seg, spec, heat, pos, rot) {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(rt, rb, h, seg), null);
+    register(m, spec, heat);
+    if (pos) m.position.set(pos[0], pos[1], pos[2]);
+    if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+    return m;
+  }
+
+  // Tube between two 3D points (for frame spars, forks, swingarm)
+  const UP = new THREE.Vector3(0, 1, 0);
+  function tube(a, b, r, spec, heat) {
+    const va = new THREE.Vector3().fromArray(a);
+    const vb = new THREE.Vector3().fromArray(b);
+    const dir = new THREE.Vector3().subVectors(vb, va);
+    const len = dir.length();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 14), null);
+    register(m, spec, heat);
+    m.position.copy(va).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(UP, dir.clone().normalize());
+    return m;
+  }
+
+  /* ---------- 4a. Chassis group ---------- */
+  const gFrame = new THREE.Group();
+  gFrame.userData.partId = 'frame';
+  bike.add(gFrame);
+
+  const H = MAT.carbon, HH = MAT.carbonHi, hFrame = PARTS.frame.heat;
+
+  // main spars (both sides)
+  [-0.19, 0.19].forEach(function (z) {
+    gFrame.add(tube([1.02, 1.74, z], [-0.30, 1.56, z], 0.062, H, hFrame));      // top spar
+    gFrame.add(tube([-0.30, 1.56, z], [-0.46, 0.86, z], 0.055, H, hFrame));     // rear down spar
+    gFrame.add(tube([1.12, 1.72, z * 0.82], [1.26, 0.56, z * 0.82], 0.045, MAT.alloy, hFrame)); // fork leg
+    gFrame.add(tube([-0.46, 0.84, z], [-1.10, 0.56, z], 0.05, MAT.darkAlloy, hFrame));          // swingarm
+    gFrame.add(tube([-0.32, 1.52, z], [-1.16, 1.58, z], 0.036, H, hFrame));     // seat rail
+    gFrame.add(tube([-1.16, 1.58, z], [-1.08, 0.60, z], 0.028, H, hFrame));     // tail stay
+  });
+
+  // headstock
+  gFrame.add(tube([1.06, 1.88, 0], [1.20, 1.32, 0], 0.11, HH, hFrame));
+  // steering stem + triple clamps
+  gFrame.add(box(0.26, 0.07, 0.56, MAT.alloy, hFrame, [1.09, 1.86, 0], [0, 0, -0.24]));
+  gFrame.add(box(0.24, 0.06, 0.52, MAT.alloy, hFrame, [1.15, 1.58, 0], [0, 0, -0.24]));
+  // handlebar
+  gFrame.add(cyl(0.022, 0.022, 0.62, 12, MAT.darkAlloy, hFrame, [1.02, 1.97, 0], [Math.PI / 2, 0, 0]));
+  [-0.27, 0.27].forEach(function (z) {
+    gFrame.add(cyl(0.032, 0.032, 0.12, 10, MAT.rubber, hFrame, [1.02, 1.97, z], [Math.PI / 2, 0, 0]));
+  });
+  // cross brace
+  gFrame.add(box(0.5, 0.05, 0.42, HH, hFrame, [0.2, 1.68, 0]));
+  // seat unit
+  gFrame.add(box(0.86, 0.1, 0.34, MAT.rubber, hFrame, [-0.72, 1.66, 0], [0, 0, 0.035]));
+  // tail wedge
+  gFrame.add(box(0.44, 0.22, 0.26, HH, hFrame, [-1.16, 1.64, 0], [0, 0, 0.22]));
+  // front fairing blade
+  gFrame.add(box(0.2, 0.46, 0.34, HH, hFrame, [1.24, 1.66, 0], [0, 0, -0.32]));
+  // footpegs
+  [-0.26, 0.26].forEach(function (z) {
+    gFrame.add(cyl(0.02, 0.02, 0.2, 8, MAT.alloy, hFrame, [-0.34, 0.74, z], [Math.PI / 2, 0, 0]));
+  });
+  // rear shock
+  gFrame.add(tube([-0.42, 1.42, 0], [-0.86, 0.72, 0], 0.045, MAT.alloy, hFrame));
+  gFrame.add(tube([-0.46, 1.30, 0], [-0.78, 0.82, 0], 0.062, MAT.accent, hFrame));
+
+  // wheels
+  function wheel(cx, r) {
+    const g = new THREE.Group();
+    const tire = new THREE.Mesh(new THREE.TorusGeometry(r, 0.095, 14, 56), null);
+    register(tire, MAT.rubber, hFrame);
+    g.add(tire);
+
+    const rim = cyl(r - 0.1, r - 0.1, 0.17, 40, MAT.darkAlloy, hFrame, [0, 0, 0], [Math.PI / 2, 0, 0]);
+    g.add(rim);
+
+    const hub = cyl(0.105, 0.105, 0.28, 18, MAT.alloy, hFrame, [0, 0, 0], [Math.PI / 2, 0, 0]);
+    g.add(hub);
+
+    for (let i = 0; i < 5; i++) {
+      const s = box(r - 0.14, 0.05, 0.12, MAT.carbonHi, hFrame, [0, 0, 0], [0, 0, (i / 5) * Math.PI * 2]);
+      s.position.set(Math.cos((i / 5) * Math.PI * 2) * (r - 0.14) / 2, Math.sin((i / 5) * Math.PI * 2) * (r - 0.14) / 2, 0);
+      g.add(s);
+    }
+    // brake disc
+    const disc = cyl(r - 0.17, r - 0.17, 0.012, 40, MAT.alloy, hFrame, [0, 0, 0.16], [Math.PI / 2, 0, 0]);
+    g.add(disc);
+
+    g.position.set(cx, r, 0);
+    return g;
+  }
+  gFrame.add(wheel(-1.10, 0.56));
+  gFrame.add(wheel(1.26, 0.56));
+
+  /* ---------- 4b. Battery pack group ---------- */
+  const gBattery = new THREE.Group();
+  gBattery.userData.partId = 'battery';
+  bike.add(gBattery);
+  const hBat = PARTS.battery.heat;
+
+  const packCase = box(1.44, 0.86, 0.56, MAT.packCase, hBat, [0.16, 1.16, 0], [0, 0, -0.045]);
+  gBattery.add(packCase);
+  // cooling fins
+  for (let i = 0; i < 7; i++) {
+    const fin = box(0.035, 0.66, 0.6, MAT.darkAlloy, hBat, [-0.36 + i * 0.17, 1.17, 0], [0, 0, -0.045]);
+    gBattery.add(fin);
+  }
+  // module indicator strip
+  const strip = box(1.2, 0.035, 0.03, MAT.accent, hBat, [0.16, 0.82, 0.29], [0, 0, -0.045]);
+  gBattery.add(strip);
+  // HV junction block
+  gBattery.add(box(0.26, 0.2, 0.3, MAT.inverter, hBat, [-0.52, 1.36, 0], [0, 0, -0.045]));
+  // orange HV cable run (as a tube)
+  gBattery.add(tube([-0.52, 1.3, 0.14], [-0.52, 0.92, 0.14], 0.028, { color: 0xd35400, metalness: 0.2, roughness: 0.6 }, hBat));
+
+  /* ---------- 4c. Motor group ---------- */
+  const gMotor = new THREE.Group();
+  gMotor.userData.partId = 'motor';
+  bike.add(gMotor);
+  const hMot = PARTS.motor.heat;
+
+  const motorBody = cyl(0.32, 0.32, 0.44, 40, MAT.darkAlloy, hMot, [-0.52, 0.8, 0], [Math.PI / 2, 0, 0]);
+  gMotor.add(motorBody);
+  // stator fins
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2;
+    const f = box(0.06, 0.1, 0.46, MAT.alloy, hMot, [0, 0, 0], [0, 0, a]);
+    f.position.set(-0.52 + Math.cos(a) * 0.33, 0.8 + Math.sin(a) * 0.33, 0);
+    gMotor.add(f);
+  }
+  // end cap with cyan core
+  gMotor.add(cyl(0.16, 0.16, 0.48, 24, MAT.accent, hMot, [-0.52, 0.8, 0], [Math.PI / 2, 0, 0]));
+  // output pulley
+  gMotor.add(cyl(0.12, 0.12, 0.09, 20, MAT.alloy, hMot, [-0.52, 0.8, 0.26], [Math.PI / 2, 0, 0]));
+  // drive belt to rear wheel
+  gMotor.add(box(0.62, 0.035, 0.07, MAT.rubber, hMot, [-0.81, 0.92, 0.26], [0, 0, 0.16]));
+  gMotor.add(box(0.62, 0.035, 0.07, MAT.rubber, hMot, [-0.81, 0.66, 0.26], [0, 0, -0.1]));
+
+  /* ---------- 4d. Controller group ---------- */
+  const gCtrl = new THREE.Group();
+  gCtrl.userData.partId = 'controller';
+  bike.add(gCtrl);
+  const hCtl = PARTS.controller.heat;
+
+  gCtrl.add(box(0.58, 0.24, 0.46, MAT.inverter, hCtl, [0.14, 1.74, 0], [0, 0, -0.045]));
+  for (let i = 0; i < 6; i++) {
+    gCtrl.add(box(0.03, 0.1, 0.44, MAT.alloy, hCtl, [-0.06 + i * 0.08, 1.9, 0], [0, 0, -0.045]));
+  }
+  gCtrl.add(box(0.2, 0.05, 0.2, MAT.accent, hCtl, [0.34, 1.86, 0], [0, 0, -0.045]));
+  // 3-phase cables to motor
+  gCtrl.add(tube([-0.1, 1.68, 0.12], [-0.46, 0.96, 0.12], 0.026, { color: 0xd35400, metalness: 0.2, roughness: 0.6 }, hCtl));
+
+  /* ---------- Part group bookkeeping ---------- */
+  const GROUPS = { battery: gBattery, motor: gMotor, controller: gCtrl, frame: gFrame };
+
+  // Hotspot anchors + camera framings + explode vectors
+  const RIG = {
+    battery:    { anchor: [0.16, 1.62, 0.30],  cam: [2.5, 2.3, 3.5],   target: [0.10, 1.25, 0], explode: [0, 1.15, 0.0] },
+    motor:      { anchor: [-0.52, 0.82, 0.30], cam: [-1.9, 1.7, 2.9],  target: [-0.52, 0.85, 0], explode: [-0.55, -0.35, 0.95] },
+    controller: { anchor: [0.16, 1.98, 0.26],  cam: [1.4, 2.9, 2.7],   target: [0.14, 1.78, 0], explode: [0.35, 1.5, -0.55] },
+    frame:      { anchor: [-0.30, 1.50, 0.34], cam: [3.9, 2.4, 4.4],   target: [0, 1.15, 0],    explode: [0, 0, 0] }
+  };
+
+  bike.position.y = 0;
+
+  Object.keys(GROUPS).forEach(function (id) {
+    const g = GROUPS[id];
+    g.userData.basePos = g.position.clone();
+    g.userData.explode = new THREE.Vector3().fromArray(RIG[id].explode);
+  });
+
+  /* ----------------------------------------------------------------------
+     5. RENDER MODES / HIGHLIGHT
+     ---------------------------------------------------------------------- */
+  let renderMode = 'standard';
+  let selected = null;
+
+  function applyMode(mode) {
+    renderMode = mode;
+    registry.forEach(function (m) {
+      m.material = m.userData.mats[mode];
+    });
+    grid.material.opacity = mode === 'wireframe' ? 0.34 : 0.22;
+    ground.visible = mode !== 'wireframe';
+    scene.background = new THREE.Color(mode === 'thermal' ? 0x07080b : 0x0a0a0c);
+
+    document.querySelectorAll('#mode-seg button').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(b.dataset.mode === mode));
+    });
+    const label = mode.toUpperCase();
+    document.getElementById('t-shading').textContent = label;
+    document.getElementById('c-shade').textContent = label;
+
+    applyHighlight(); // re-apply emissive on the fresh materials
+  }
+
+  function applyHighlight() {
+    registry.forEach(function (m) {
+      const mat = m.material;
+      if (!mat || mat.isMeshBasicMaterial) return;
+      const isSel = selected && isDescendantOf(m, GROUPS[selected]);
+      if (isSel) {
+        mat.emissive = new THREE.Color(0x00f0ff);
+        mat.emissiveIntensity = renderMode === 'thermal' ? 0.85 : 0.55;
+      } else if (renderMode === 'thermal') {
+        mat.emissive = new THREE.Color(heatColor(m.userData.heat));
+        mat.emissiveIntensity = 0.45;
+      } else {
+        // restore the material's own emissive: accent parts keep their designed glow
+        const be = (mat.userData && mat.userData.baseEmissive !== undefined) ? mat.userData.baseEmissive : 0x000000;
+        const bi = (mat.userData && mat.userData.baseIntensity !== undefined) ? mat.userData.baseIntensity : 0;
+        mat.emissive = new THREE.Color(be);
+        mat.emissiveIntensity = bi;
+      }
+    });
+
+    // Wireframe mode: tint the selected group brighter
+    if (renderMode === 'wireframe') {
+      registry.forEach(function (m) {
+        if (m.material.isMeshBasicMaterial) {
+          const isSel = selected && isDescendantOf(m, GROUPS[selected]);
+                    m.material.color.set(isSel ? 0x00f0ff : 0x8be9f2);
+          m.material.opacity = isSel ? 0.95 : 0.4;
+        }
+      });
+    }
+  }
+
+  function isDescendantOf(obj, root) {
+    let p = obj;
+    while (p) { if (p === root) return true; p = p.parent; }
+    return false;
+  }
+
+  document.getElementById('mode-seg').addEventListener('click', function (e) {
+    const b = e.target.closest('button[data-mode]');
+    if (!b) return;
+    e.preventDefault();
+    applyMode(b.dataset.mode);
+  });
+
+  /* ----------------------------------------------------------------------
+     6. CAMERA FLIGHT
+     ---------------------------------------------------------------------- */
+  const flight = { active: false, t: 0, dur: 950, fromPos: new THREE.Vector3(), toPos: new THREE.Vector3(), fromTgt: new THREE.Vector3(), toTgt: new THREE.Vector3() };
+  const HOME_CAM = new THREE.Vector3(4.6, 2.6, 5.2);
+  const HOME_TGT = new THREE.Vector3(0, 1.1, 0);
+
+  function easeInOut(t) { return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2; }
+
+  function flyTo(pos, target, dur) {
+    flight.fromPos.copy(camera.position);
+    flight.fromTgt.copy(controls.target);
+    flight.toPos.set(pos[0], pos[1], pos[2]);
+    flight.toTgt.set(target[0], target[1], target[2]);
+    flight.t = 0;
+    flight.dur = dur || 950;
+    flight.active = true;
+  }
+
+  function updateFlight(dt) {
+    if (!flight.active) return;
+    flight.t += dt;
+    const k = Math.min(1, flight.t / flight.dur);
+    const e = easeInOut(k);
+    camera.position.lerpVectors(flight.fromPos, flight.toPos, e);
+    controls.target.lerpVectors(flight.fromTgt, flight.toTgt, e);
+    if (k >= 1) flight.active = false;
+  }
+
+  /* ----------------------------------------------------------------------
+     7. SELECTION + INSPECTOR
+     ---------------------------------------------------------------------- */
+  const inspector = document.getElementById('inspector');
+
+  function selectPart(id, opts) {
+    opts = opts || {};
+    const data = PARTS[id];
+    if (!data) return;
+    selected = id;
+    applyHighlight();
+
+    if (opts.fly !== false) {
+      flyTo(RIG[id].cam, RIG[id].target, 950);
+      autoRotateOn = false;
+      document.getElementById('btn-rotate').setAttribute('aria-pressed', 'false');
+    }
+
+    // Inspector content
+    document.getElementById('ins-idx').textContent = data.index;
+    document.getElementById('ins-title').textContent = data.name;
+    document.getElementById('ins-sub').textContent = data.sub;
+    document.getElementById('ins-desc').textContent = data.desc;
+
+    const gaugeHost = document.getElementById('ins-gauges');
+    gaugeHost.innerHTML = '';
+    data.gauges.forEach(function (g) {
+      const el = document.createElement('div');
+      el.className = 'gauge';
+      el.innerHTML = '<div class="k"></div><div class="v"></div><div class="bar"><i></i></div>';
+      el.querySelector('.k').textContent = g.k;
+      el.querySelector('.v').innerHTML = g.v + '<u></u>';
+      el.querySelector('.v u').textContent = g.u;
+      const fill = el.querySelector('.bar i');
+      if (g.warn) fill.classList.add('warn');
+      gaugeHost.appendChild(el);
+      requestAnimationFrame(function () { fill.style.width = g.pct + '%'; });
+    });
+
+    const rowHost = document.getElementById('ins-rows');
+    rowHost.innerHTML = '';
+    data.rows.forEach(function (r) {
+      const el = document.createElement('div');
+      el.className = 'row';
+      el.innerHTML = '<span class="k"></span><span class="dots"></span><span class="v"></span>';
+      el.querySelector('.k').textContent = r[0];
+      el.querySelector('.v').textContent = r[1];
+      rowHost.appendChild(el);
+    });
+
+    const tagHost = document.getElementById('ins-tags');
+    tagHost.innerHTML = '';
+    data.tags.forEach(function (t, i) {
+      const el = document.createElement('span');
+      el.className = 'tag' + (i === 0 ? ' on' : '');
+      el.textContent = t;
+      tagHost.appendChild(el);
+    });
+
+    inspector.classList.remove('collapsed');
+    document.getElementById('btn-inspector').setAttribute('aria-pressed', 'true');
+    document.getElementById('t-focus').textContent = data.name.toUpperCase();
+
+    // dock + hotspot active states
+    document.querySelectorAll('#part-dock .chip').forEach(function (c) {
+      c.setAttribute('aria-pressed', String(c.dataset.part === id));
+    });
+    Object.keys(hotspotEls).forEach(function (k) {
+      hotspotEls[k].el.classList.toggle('is-active', k === id);
+    });
+  }
+
+  function clearSelection() {
+    selected = null;
+    applyHighlight();
+    inspector.classList.add('collapsed');
+    document.getElementById('t-focus').textContent = 'NONE';
+    document.querySelectorAll('#part-dock .chip').forEach(function (c) { c.setAttribute('aria-pressed', 'false'); });
+    Object.keys(hotspotEls).forEach(function (k) { hotspotEls[k].el.classList.remove('is-active'); });
+  }
+
+  document.getElementById('ins-close').addEventListener('click', function (e) {
+    e.preventDefault();
+    clearSelection();
+  });
+
+  /* ----------------------------------------------------------------------
+     8. BOTTOM DOCK (component buttons)
+     ---------------------------------------------------------------------- */
+  const dock = document.getElementById('part-dock');
+  PART_IDS.forEach(function (id) {
+    const p = PARTS[id];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip';
+    b.dataset.part = id;
+    b.setAttribute('aria-pressed', 'false');
+    b.innerHTML = '<span class="t"></span><span class="s"></span>';
+    b.querySelector('.t').textContent = p.name;
+    b.querySelector('.s').textContent = p.short;
+    dock.appendChild(b);
+  });
+  dock.addEventListener('click', function (e) {
+    const b = e.target.closest('.chip');
+    if (!b) return;
+    e.preventDefault();
+    if (selected === b.dataset.part) { clearSelection(); return; }
+    selectPart(b.dataset.part);
+  });
+
+  /* ----------------------------------------------------------------------
+     9. HOTSPOTS (DOM projected from 3D anchors)
+     ---------------------------------------------------------------------- */
+  const hotspotEls = {};
+  PART_IDS.forEach(function (id) {
+    const p = PARTS[id];
+    const el = document.createElement('div');
+    el.className = 'hotspot';
+    el.innerHTML =
+      '<span class="hs-node" aria-hidden="true"></span>' +
+      '<span class="hs-line" aria-hidden="true"></span>' +
+      '<button type="button" class="hs-card"><span class="t"></span><span class="s"></span></button>';
+    el.querySelector('.t').textContent = p.name;
+    el.querySelector('.s').textContent = '[' + p.short + ']';
+    el.querySelector('.hs-card').addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      selectPart(id);
+    });
+    hotspotLayer.appendChild(el);
+    hotspotEls[id] = { el: el, anchor: new THREE.Vector3().fromArray(RIG[id].anchor) };
+  });
+
+  const projV = new THREE.Vector3();
+  function updateHotspots() {
+    const w = host.clientWidth, h = host.clientHeight;
+    PART_IDS.forEach(function (id) {
+      const hs = hotspotEls[id];
+      const g = GROUPS[id];
+      // anchor is authored in model space; add the group's live explode offset
+      projV.copy(hs.anchor)
+        .add(g.position)
+        .sub(g.userData.basePos)
+        .add(bike.position);
+      projV.project(camera);
+      const behind = projV.z > 1;
+      const x = (projV.x * 0.5 + 0.5) * w;
+      const y = (-projV.y * 0.5 + 0.5) * h;
+      const el = hs.el;
+      if (behind || x < -80 || x > w + 80 || y < -60 || y > h + 60) {
+        el.classList.add('hidden');
+      } else {
+        el.classList.remove('hidden');
+        el.classList.toggle('flip', x > w * 0.62);
+        el.style.left = x + 'px';
+        el.style.top = y + 'px';
+      }
+    });
+  }
+
+  /* ----------------------------------------------------------------------
+     10. RAYCAST PICKING
+     ---------------------------------------------------------------------- */
+  const raycaster = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
+  let downPos = { x: 0, y: 0 }, moved = false;
+
+  renderer.domElement.addEventListener('pointerdown', function (e) {
+    downPos = { x: e.clientX, y: e.clientY };
+        moved = false;
+  });
+  renderer.domElement.addEventListener('pointermove', function (e) {
+    if (Math.abs(e.clientX - downPos.x) > 5 || Math.abs(e.clientY - downPos.y) > 5) moved = true;
+  });
+  renderer.domElement.addEventListener('pointerup', function (e) {
+    if (moved) return; // it was an orbit drag, not a pick
+    const rect = renderer.domElement.getBoundingClientRect();
+    ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+    ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(ndc, camera);
+    const hits = raycaster.intersectObject(bike, true);
+    if (!hits.length) { clearSelection(); return; }
+    let o = hits[0].object;
+    while (o && !o.userData.partId) o = o.parent;
+    if (o && o.userData.partId) selectPart(o.userData.partId);
+  });
+
+  /* ----------------------------------------------------------------------
+     11. TOOL RAIL
+     ---------------------------------------------------------------------- */
+  let autoRotateOn = true;
+  let autoRotateSpeed = 0;      // soft-interpolated
+  let idleSince = performance.now();
+  let exploded = false;
+  let explodeAmt = 0;
+
+  const btnRotate = document.getElementById('btn-rotate');
+  btnRotate.addEventListener('click', function (e) {
+    e.preventDefault();
+    autoRotateOn = !autoRotateOn;
+    btnRotate.setAttribute('aria-pressed', String(autoRotateOn));
+    idleSince = performance.now();
+  });
+
+  const btnExplode = document.getElementById('btn-explode');
+  btnExplode.addEventListener('click', function (e) {
+    e.preventDefault();
+    exploded = !exploded;
+    btnExplode.setAttribute('aria-pressed', String(exploded));
+    if (exploded) {
+      flyTo([4.9, 3.1, 5.4], [0, 1.35, 0], 900);
+    }
+  });
+
+  const btnGrid = document.getElementById('btn-grid');
+  btnGrid.addEventListener('click', function (e) {
+    e.preventDefault();
+    const on = btnGrid.getAttribute('aria-pressed') !== 'true';
+    btnGrid.setAttribute('aria-pressed', String(on));
+    grid.visible = on;
+    reticle.visible = on;
+    document.getElementById('t-grid').textContent = on ? '10 mm · 1:1' : 'OFF';
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function (e) {
+    e.preventDefault();
+    flyTo(HOME_CAM.toArray(), HOME_TGT.toArray(), 900);
+    clearSelection();
+  });
+
+  const btnInspector = document.getElementById('btn-inspector');
+  btnInspector.addEventListener('click', function (e) {
+    e.preventDefault();
+    const willOpen = inspector.classList.contains('collapsed');
+    if (willOpen && !selected) selectPart('battery', { fly: false });
+    else inspector.classList.toggle('collapsed');
+    btnInspector.setAttribute('aria-pressed', String(!inspector.classList.contains('collapsed')));
+  });
+
+  controls.addEventListener('start', function () { idleSince = performance.now() + 1e9; });
+  controls.addEventListener('end', function () { idleSince = performance.now(); });
+
+  /* ----------------------------------------------------------------------
+     12. RESIZE
+     ---------------------------------------------------------------------- */
+  function onResize() {
+    const w = host.clientWidth || window.innerWidth;
+    const h = host.clientHeight || window.innerHeight;
+    if (w === 0 || h === 0) return;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+  }
+  window.addEventListener('resize', onResize);
+  onResize();
+
+  /* ----------------------------------------------------------------------
+     13. HUD TELEMETRY
+     ---------------------------------------------------------------------- */
+  const el = {
+    fps: document.getElementById('t-fps'),
+    pitch: document.getElementById('t-pitch'),
+    yaw: document.getElementById('t-yaw'),
+    dist: document.getElementById('t-dist'),
+    cPitch: document.getElementById('c-pitch'),
+    cYaw: document.getElementById('c-yaw'),
+    cFps: document.getElementById('c-fps'),
+    gx: document.getElementById('g-x'),
+    gy: document.getElementById('g-y'),
+    gz: document.getElementById('g-z')
+  };
+
+  let fpsAccum = 0, fpsFrames = 0, fpsValue = 60, hudClock = 0;
+
+  function updateHUD(dt) {
+    hudClock += dt;
+    if (hudClock < 160) return;
+    hudClock = 0;
+
+    const polarDeg = 90 - THREE.MathUtils.radToDeg(controls.getPolarAngle());
+    let azDeg = THREE.MathUtils.radToDeg(controls.getAzimuthalAngle());
+    if (azDeg < 0) azDeg += 360;
+    const dist = camera.position.distanceTo(controls.target);
+
+    el.fps.textContent = fpsValue.toFixed(1);
+    el.cFps.textContent = fpsValue.toFixed(1);
+        el.pitch.textContent = polarDeg.toFixed(1) + '°';
+    el.yaw.textContent = azDeg.toFixed(1) + '°';
+    el.cPitch.textContent = polarDeg.toFixed(0) + '°';
+    el.cYaw.textContent = azDeg.toFixed(0) + '°';
+    el.dist.textContent = dist.toFixed(2) + ' m';
+    el.gx.textContent = (camera.position.x * 100).toFixed(1);
+    el.gy.textContent = (camera.position.y * 100).toFixed(1);
+    el.gz.textContent = (camera.position.z * 100).toFixed(1);
+  }
+
+  /* ----------------------------------------------------------------------
+     14. MAIN LOOP
+     ---------------------------------------------------------------------- */
+  let last = performance.now();
+  const tmpVec = new THREE.Vector3();
+
+  function tick(now) {
+    requestAnimationFrame(tick);
+    const dt = Math.min(64, now - last);
+    last = now;
+
+    // FPS averaging
+    fpsAccum += dt; fpsFrames++;
+    if (fpsAccum >= 500) { fpsValue = (fpsFrames * 1000) / fpsAccum; fpsAccum = 0; fpsFrames = 0; }
+
+    if (currentView !== 'explorer') return; // don't burn GPU on hidden views
+
+    // soft auto-rotate ramp, pausing while the user drags
+    const idleFor = now - idleSince;
+    const wantRotate = autoRotateOn && idleFor > 2400 && !flight.active;
+    autoRotateSpeed += ((wantRotate ? 0.62 : 0) - autoRotateSpeed) * Math.min(1, dt / 420);
+    controls.autoRotate = autoRotateSpeed > 0.005;
+    controls.autoRotateSpeed = autoRotateSpeed;
+
+    updateFlight(dt);
+
+    // exploded view interpolation
+    const target = exploded ? 1 : 0;
+    explodeAmt += (target - explodeAmt) * Math.min(1, dt / 320);
+    Object.keys(GROUPS).forEach(function (id) {
+      const g = GROUPS[id];
+      tmpVec.copy(g.userData.explode).multiplyScalar(explodeAmt);
+      g.position.copy(g.userData.basePos).add(tmpVec);
+    });
+
+    // gentle under-glow breathing
+    under.intensity = 0.42 + Math.sin(now * 0.0016) * 0.16;
+
+    controls.update();
+    renderer.render(scene, camera);
+    updateHotspots();
+    updateHUD(dt);
+  }
+
+  /* ----------------------------------------------------------------------
+     15. LOADER SEQUENCE
+     ---------------------------------------------------------------------- */
+  (function bootSequence() {
+    const bar = document.getElementById('loader-bar');
+    const txt = document.getElementById('loader-text');
+    const stages = ['Compiling geometry buffers', 'Binding material graph', 'Solving light transport', 'Stream ready'];
+    let i = 0, p = 0;
+    const iv = setInterval(function () {
+      p += 24 + Math.random() * 20;
+      if (p > 100) p = 100;
+      bar.style.width = p + '%';
+      const s = Math.min(stages.length - 1, Math.floor(p / 26));
+      if (s !== i) { i = s; txt.textContent = stages[s]; }
+      if (p >= 100) {
+        clearInterval(iv);
+        setTimeout(function () {
+          document.getElementById('loader').classList.add('gone');
+          flyTo([4.2, 2.35, 4.6], [0, 1.1, 0], 1400);
+        }, 320);
+      }
+    }, 260);
+  })();
+
+  applyMode('standard');
+  requestAnimationFrame(tick);
+
+  /* ----------------------------------------------------------------------
+     16. PART DETAILS VIEW (built from the same data)
+     ---------------------------------------------------------------------- */
+  const partGrid = document.getElementById('part-grid');
+  PART_IDS.forEach(function (id) {
+    const p = PARTS[id];
+    const card = document.createElement('article');
+    card.className = 'part-card';
+
+    let rowsHTML = '';
+    p.rows.forEach(function (r) {
+      rowsHTML += '<div class="row"><span class="k">' + escapeHTML(r[0]) + '</span><span class="dots"></span><span class="v">' + escapeHTML(r[1]) + '</span></div>';
+    });
+    let gaugeHTML = '';
+    p.gauges.forEach(function (g) {
+      gaugeHTML += '<div class="gauge"><div class="k">' + escapeHTML(g.k) + '</div><div class="v">' + escapeHTML(g.v) + '<u>' + escapeHTML(g.u) + '</u></div><div class="bar"><i style="width:' + g.pct + '%" class="' + (g.warn ? 'warn' : '') + '"></i></div></div>';
+    });
+
+    card.innerHTML =
+      '<header><div><div class="idx">' + p.index + '</div><h3>' + escapeHTML(p.name) + '</h3><p>' + escapeHTML(p.sub) + '</p></div></header>' +
+      '<div class="body"><p>' + escapeHTML(p.desc) + '</p>' +
+      '<div class="gauges">' + gaugeHTML + '</div>' +
+      '<div class="rows">' + rowsHTML + '</div>' +
+      '<div class="tagline">' + p.tags.map(function (t, i) { return '<span class="tag' + (i === 0 ? ' on' : '') + '">' + escapeHTML(t) + '</span>'; }).join('') + '</div>' +
+      '</div>' +
+      '<footer><button type="button" class="btn-ghost" data-focus="' + id + '" style="width:100%;justify-content:center;">Show in viewport</button></footer>';
+
+    partGrid.appendChild(card);
+  });
+
+  function escapeHTML(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // Any button with data-focus jumps to the explorer and frames that part.
+  document.addEventListener('click', function (e) {
+    const f = e.target.closest('[data-focus]');
+    if (!f) return;
+    e.preventDefault();
+    setView('explorer');
+    setTimeout(function () { selectPart(f.dataset.focus); }, 120);
+      });
+
+  /* ----------------------------------------------------------------------
+     17. ASK AI — offline spec console
+     ---------------------------------------------------------------------- */
+  const log = document.getElementById('ai-log');
+  const input = document.getElementById('ai-input');
+
+  function addMsg(who, text, cls) {
+    const m = document.createElement('div');
+    m.className = 'msg ' + (cls || '');
+    m.innerHTML = '<span class="who"></span><span class="txt"></span>';
+    m.querySelector('.who').textContent = who;
+    m.querySelector('.txt').innerHTML = text;
+    log.appendChild(m);
+    log.scrollTop = log.scrollHeight;
+    return m;
+  }
+
+  addMsg('SYS', 'Console online. Indexed: battery pack, electric motor, motor controller, chassis frame, and the APX-01 build sheet. Ask in plain language.', 'sys');
+
+  const KB = [
+    { k: ['battery', 'pack', 'kwh', 'cell', 'energy', 'soc', 'voltage', '800v', 'charge', 'charging'],
+      part: 'battery',
+      a: 'The pack is <b>24 kWh usable</b> on an <b>800 V</b> bus — 384 prismatic NMC 811 cells in 96s4p. It is a structural member: the case bolts the headstock to the swingarm pivot, so there is no lower frame cradle. Liquid cold-plate cooling on a dual circuit shared with the inverter, 97 kg with the case, and <b>350 kW</b> DC peak charging, which is 10–80% in about 11 minutes.' },
+    { k: ['motor', 'axial', 'flux', 'torque', 'power', 'kw', 'drive', 'rpm', 'nm'],
+      part: 'motor',
+      a: 'A dual-rotor <b>axial-flux PMSM</b>, mid-mounted: <b>180 kW</b> peak at 9,400 rpm, 104 kW continuous, and <b>320 Nm</b> from zero rpm. Peak efficiency is 96.4%. It weighs 21.4 kg dry because the pancake layout shortens the flux path — the same reason it makes torque without leaning on the reduction stage. Oil-mist cooling sprays the stator directly; rotor temp is the number to watch under sustained load.' },
+    { k: ['controller', 'inverter', 'sic', 'silicon', 'carbide', 'switching', 'mosfet', 'phase', 'foc'],
+      part: 'controller',
+      a: 'The inverter runs <b>1200 V class SiC MOSFETs</b> switching at <b>24 kHz</b>, with field-oriented control on a 20 kHz loop. Silicon carbide matters here because a conventional silicon IGBT loses a painful amount of energy as heat at 800 volts. SiC holds <b>99.1%</b> efficiency, which is what lets the pack and motor share one bus with no step-down stage. 4.8 kg, ASIL-D torque monitoring, on the pack coolant loop.' },
+    { k: ['frame', 'chassis', 'carbon', 'monocoque', 'stiff', 'stiffness', 'rake', 'trail', 'wheelbase', 'handling'],
+      part: 'frame',
+      a: 'A single-piece autoclaved <b>carbon monocoque</b>, 8.4 kg, T800/T1100 hybrid in 14 plies with bonded and pinned Ti-6Al-4V inserts. Torsional stiffness is <b>14.8 kNm/deg</b> — deliberately not maximised, since the lay-up leaves controlled lateral flex so the chassis still gives feedback at full lean. Wheelbase 1,465 mm, rake 23.5°, trail 97 mm.' },
+    { k: ['range', 'distance', 'far', 'wltp'],
+      a: 'Roughly <b>290 km</b> WLTP from the 24 kWh pack, or about 180 km if you ride it the way it wants to be ridden. Regen through the axial-flux motor recovers up to 42 kW on trailing throttle.' },
+    { k: ['weight', 'mass', 'kg', 'heavy'],
+      a: 'Dry mass is <b>186 kg</b>. The split that matters: 97 kg pack, 21.4 kg motor, 8.4 kg frame, 4.8 kg inverter. Mass is low and central because the pack sits between the spars rather than above them.' },
+    { k: ['fast', 'speed', '0-100', 'acceleration', 'top'],
+      a: '<b>2.9 s</b> to 100 km/h and a limited <b>249 km/h</b> top speed. The limiter is thermal, not gearing — sustained full draw pushes the rotor past 112 °C and torque tapers to protect the magnets.' },
+    { k: ['thermal', 'heat', 'cooling', 'temp', 'temperature'],
+      a: 'Two circuits. The pack and inverter share a cold plate loop at 34–78 °C; the motor runs its own oil-mist system and sits hottest at <b>112 °C</b> rotor temp. Switch the viewport to <b>Thermal</b> mode to see the gradient across the assembly — the motor reads red, the frame stays blue.' },
+    { k: ['wireframe', 'mode', 'render', 'view', 'explode', 'exploded', 'rotate', 'controls', 'how do i'],
+      a: 'In the 3D explorer: drag to orbit, scroll or pinch to zoom, and click any part or marker to fly the camera to it. The left rail toggles auto-rotate, the exploded view, the reference grid and the inspector. The bar at the bottom switches between Standard, Wireframe and Thermal shading.' },
+    { k: ['suspension', 'ohlins', 'fork', 'shock', 'damper'],
+      a: 'Öhlins semi-active at both ends: 43 mm inverted fork, 120 mm travel, and a monoshock on a progressive linkage through the swingarm. Damping reads IMU and wheel-speed data at 1 kHz and adjusts per stroke.' },
+    { k: ['brake', 'braking', 'disc', 'stopping'],
+      a: 'Twin 320 mm front discs with radial four-piston calipers, single 240 mm rear. Blended regen handles the first portion of lever travel, so the pads only come in under harder braking.' }
+  ];
+
+  function answer(q) {
+    const s = q.toLowerCase();
+    let best = null, bestScore = 0;
+    KB.forEach(function (entry) {
+      let score = 0;
+      entry.k.forEach(function (kw) { if (s.indexOf(kw) !== -1) score += kw.length; });
+      if (score > bestScore) { bestScore = score; best = entry; }
+    });
+    if (!best) {
+      return { text: 'Nothing in the build sheet matches that. The console indexes the <b>battery pack</b>, <b>electric motor</b>, <b>motor controller</b> and <b>chassis frame</b>, plus range, mass, performance, thermals, suspension and brakes. Try naming a component.' };
+    }
+    return { text: best.a, part: best.part };
+  }
+
+  function typeOut(node, html) {
+    // reveal in chunks; respects reduced motion
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { node.innerHTML = html; return; }
+    const tokens = 
+    html.split(/(<[^>]+>|\s+)/).filter(Boolean);
+    let i = 0;
+    node.innerHTML = '<span class="caret"></span>';
+    const iv = setInterval(function () {
+      i += 2;
+      node.innerHTML = tokens.slice(0, i).join('') + (i < tokens.length ? '<span class="caret"></span>' : '');
+      log.scrollTop = log.scrollHeight;
+      if (i >= tokens.length) clearInterval(iv);
+    }, 26);
+  }
+
+  function ask(q) {
+    if (!q.trim()) return;
+    addMsg('YOU', escapeHTML(q), 'user');
+    const res = answer(q);
+    const m = addMsg('APEX', '', '');
+    setTimeout(function () {
+      typeOut(m.querySelector('.txt'), res.text);
+      if (res.part) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-ghost';
+        btn.style.cssText = 'margin-top:10px;padding:8px 12px;font-size:10px;';
+        btn.textContent = 'Open ' + PARTS[res.part].name.toLowerCase() + ' in viewport';
+        btn.dataset.focus = res.part;
+        m.querySelector('.txt').appendChild(document.createElement('br'));
+        m.querySelector('.txt').appendChild(btn);
+      }
+    }, 240);
+  }
+
+  document.getElementById('ai-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    ask(input.value);
+    input.value = '';
+  });
+
+  document.getElementById('ai-suggest').addEventListener('click', function (e) {
+    const b = e.target.closest('button');
+    if (!b) return;
+    e.preventDefault();
+    ask(b.textContent);
+  });
+
+  /* ----------------------------------------------------------------------
+     18. KEYBOARD SHORTCUTS
+     ---------------------------------------------------------------------- */
+  document.addEventListener('keydown', function (e) {
+    if (e.target.tagName === 'INPUT') return;
+    const k = e.key.toLowerCase();
+    if (k === '1') selectPart('battery');
+    else if (k === '2') selectPart('motor');
+    else if (k === '3') selectPart('controller');
+    else if (k === '4') selectPart('frame');
+    else if (k === 'w') applyMode(renderMode === 'wireframe' ? 'standard' : 'wireframe');
+    else if (k === 't') applyMode(renderMode === 'thermal' ? 'standard' : 'thermal');
+    else if (k === 'r') document.getElementById('btn-reset').click();
+    else if (k === 'e') document.getElementById('btn-explode').click();
+    else if (k === 'escape') clearSelection();
+  });
+
+  /* ----------------------------------------------------------------------
+     19. WEBGL FAILURE FALLBACK
+     ---------------------------------------------------------------------- */
+  if (!renderer.getContext()) {
+    document.getElementById('loader').innerHTML =
+      '<div class="t" style="color:#FF334B">WebGL unavailable</div>' +
+      '<p style="color:#9BA1A7;max-width:40ch;text-align:center">This viewport needs hardware acceleration. Part details and the spec console still work.</p>';
+  }
+
+})();
+</script>
+</body>
+</html>
